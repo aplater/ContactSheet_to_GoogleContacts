@@ -131,7 +131,6 @@ function SFShare() {
   
 }
 
-
 function importStaffEmails() {
  
   var ss = SpreadsheetApp.getActive();
@@ -159,8 +158,6 @@ function importStaffEmails() {
     if (listData[i][0] != "") {
       
       uList.push(listData[i][0]);
-      
-      //Logger.log(listData[i][0])
       
     }
     

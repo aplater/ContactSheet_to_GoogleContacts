@@ -1,18 +1,47 @@
 function deleteContacts() {
   
   var contacts = ContactsApp.getContactsByEmailAddress('.alvsjo@engelska.se');
-  if (contacts > "") {
-    for (var i in contacts) {
-      contacts[i].deleteContact();
+  var ss = SpreadsheetApp.getActive();
+  var csv = ss.getSheetByName("CSV Format");
+  var csvData = csv.getDataRange().getValues();
+  
+  Logger.log(contacts.length);
+  
+  for (i = 0; i < contacts.length; i++) {
+    
+    var toggle = 0;
+    
+    try {
+      
+      var cEmail = contacts[i].getPrimaryEmail();
+      
+      for (c = 1; c < csvData.length; c++) {
+        
+        var email = csvData[c][14];
+        
+        if (email != "") {
+          
+          if (cEmail == email) {
+            
+            var toggle = 1;
+            
+          }
+        } 
+      }
+      if (toggle == 0) {
+        contacts[i].deleteContact();
+      }
+    } catch(e) {
+      continue; 
     }
-  }  
+  } 
 }
 
 function createGroups() {
   
   var ss = SpreadsheetApp.getActive();
   var csv = ss.getSheetByName("CSV Format");
-  var background = ss.getSheetByName("Background")
+  var background = ss.getSheetByName("Background");
   
   var cGroups = ContactsApp.getContactGroups();
   
@@ -22,11 +51,9 @@ function createGroups() {
     
     dGroups.push(cGroups[g].getName());
     
-    //Logger.log(cGroups[g].getName());
-    
   }
   
-  var bData = background.getRange("A2:A").getValues();
+  var bData = background.getRange("D2:D").getValues();
   
   var uGroups = ["HoY"];
   
@@ -41,8 +68,7 @@ function createGroups() {
     }
     
   }
-  
-  
+
   for (b = 0; b < uGroups.length; b++) {
     
     var toggle = 0;
@@ -60,22 +86,22 @@ function createGroups() {
     if (toggle == 0 && uGroups[b] != "") {
       
       ContactsApp.createContactGroup(uGroups[b]);
-      
-      //Logger.log(uGroups[b]);
-      
+
     }
     
   }
   
 }
-  
+
+
 function createContacts() {
   
   var ss = SpreadsheetApp.getActive();
   var csv = ss.getSheetByName("CSV Format");
-  var background = ss.getSheetByName("Background")
+  var background = ss.getSheetByName("Background");
   
   var csvData = csv.getDataRange().getValues();
+  var bData = background.getRange("D2:D").getValues();
   
   for (c = 1; c < csvData.length; c++) {
     
@@ -91,14 +117,82 @@ function createContacts() {
           
         }
         
+        var masterGroupArr = [];
+        var contactGroupArr = [];
+        var joinedGroupArr = [];
+        
+        for (b = 0; b < bData.length; b++) {
+          
+          if (bData[b][0] != "") {
+            
+            if (group != null) {
+              
+              masterGroupArr.push(bData[b][0]);
+              
+            }
+            
+          }
+          
+        }
+        
+        var groups = contact.getContactGroups();
+        
+        for (g = 0; g < groups.length; g++) {
+          
+          contactGroupArr.push(groups[g].getName());
+          
+        }
+    
         var groups = csvData[c][87].split(";");
         for (g = 0; g < groups.length - 1; g++) {
           
-          var group = ContactsApp.getContactGroup(groups[g]);
-          
-          if (group.getName() == groups[g]) {
+          if (groups[g] != "") {
             
-            contact.addToGroup(group);
+            var group = ContactsApp.getContactGroup(groups[g]);
+            
+            if (group.getName() == groups[g]) {
+              
+              contact.addToGroup(group);
+              
+              joinedGroupArr.push(groups[g]);
+              
+            }
+            
+          }
+          
+        }
+        
+        for (cg = 0; cg < contactGroupArr.length; cg++) {
+          
+          for (jg = 0; jg < joinedGroupArr.length; jg++) {
+            
+            if (contactGroupArr[cg] == joinedGroupArr[jg]) {
+              
+              contactGroupArr.splice(cg, 1);
+              
+              var cg = cg - 1;
+              
+            }
+            
+          }
+          
+        }
+        
+        if (contactGroupArr.length > 0) {
+          
+          for (cg = 0; cg < contactGroupArr.length; cg++) {
+            
+            for (mg = 0; mg < masterGroupArr.length; mg++) {
+              
+              if (contactGroupArr[cg] == masterGroupArr[mg]) {
+                
+                var group = ContactsApp.getContactGroup(contactGroupArr[cg]);
+                
+                contact.removeFromGroup(group);
+                
+              }                
+              
+            }
             
           }
           
